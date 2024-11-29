@@ -9,12 +9,11 @@ export class BaseGame {
     }
     /** @type {Direction} */
     #direction = 'right'
+    #snakeSequence = [23, 22, 21]
     /** @type {Cell[]} */
-    #cells = []
+    #map = []
     /** @type {Direction[]} */
     #directionsQueue = []
-    #headPosition
-    #lastTailPosition
     #onGameOverCallbacks = []
 
     constructor() {
@@ -31,42 +30,48 @@ export class BaseGame {
             this.#gameOver()
             return
         }
-        this.#cells[this.#headPosition] = 'head'
+        this.#map[this.#snakeSequence[0]] = 'tail'
+        this.#snakeSequence.unshift(newHeadPosition)
+        this.#map[this.#snakeSequence[0]] = 'head'
+        delete this.#map[this.#snakeSequence.pop()]
         this.#direction = this.#directionsQueue.shift() ?? this.#direction
     }
 
     #getNewHeadPosition() {
-        const newHeadPosition = this.#headPosition + this.#directions[this.#direction]
+        const newHeadPosition = this.#snakeSequence[0] + this.#directions[this.#direction]
         return newHeadPosition > 0
             && newHeadPosition < width * height
-            && (this.#direction === 'left' && this.#headPosition % width)
-            && (this.#direction === 'right' && newHeadPosition % width)
-            && !this.#cells[newHeadPosition] ? newHeadPosition : undefined
+            && ((this.#direction === 'left' && this.#snakeSequence[0] % width)
+                || (this.#direction === 'right' && newHeadPosition % width))
+            && !this.#map[newHeadPosition] ? newHeadPosition : undefined
     }
 
     #gameOver() {
         this.#onGameOverCallbacks.forEach(callBack => callBack())
+        console.log('gameOver')
     }
 
     #setStartingCells() {
-        this.#headPosition = width - 1 + height / 2
-        this.#lastTailPosition = this.#headPosition - 2
-        this.#cells[this.#headPosition] = 'head'
-        for (let i = this.#headPosition; i >= this.#lastTailPosition; i--) {
-            this.#cells[i] = 'tail'
-        }
+        this.#snakeSequence.forEach((position, i) => {
+            this.#map[position] = i == 0 ? 'head' : 'tail'
+        })
     }
-
+    /**
+     * @param {Direction} direction 
+     */
     addDirection(direction) {
         this.#directionsQueue.push(direction)
     }
 
+    /**
+     * @param {()=>void} callBack 
+     */
     onGameOver(callBack) {
         this.#onGameOverCallbacks.push(callBack)
     }
 
     getСontext() {
-        return this.#cells.reduce((result, cell, position) => {
+        return this.#map.reduce((result, cell, position) => {
             switch (cell) {
                 case 'head':
                     result.head = this.#num2pos(position)
@@ -77,6 +82,7 @@ export class BaseGame {
                 case 'food':
                     result.food.push(this.#num2pos(position))
             }
+            return result
         }, { tails: [], food: [] })
     }
     /**
