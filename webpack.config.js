@@ -30,17 +30,7 @@ module.exports = {
         new CleanWebpackPlugin(),
         new webpack.ProvidePlugin({
             PIXI: "pixi.js",
-        }),
-        new CopyWebpackPlugin({
-            patterns:
-                [
-                    {
-                        from: path.resolve(__dirname, "src/assets"),
-                        to: path.resolve(__dirname, "dist/assets"),
-                    }
-                ]
-        }
-        )
+        })
     ],
     module: {
         rules: [
