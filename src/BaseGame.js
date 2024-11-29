@@ -20,8 +20,14 @@ export class BaseGame {
         this.#setStartingCells()
     }
 
-    #getFreeRandomPosition() {
-        //TODO
+    #getRandomFreePosition() {
+        const freeCells = width * height - this.#map.reduce(amount => ++amount, 0)
+        return this.#map.reduce((freePosition, _, busyPosition) => {
+            if (freePosition >= busyPosition) {
+                freePosition++
+            }
+            return freePosition
+        }, Math.floor(Math.random() * freeCells))
     }
 
     update() {
@@ -32,8 +38,12 @@ export class BaseGame {
         }
         this.#map[this.#snakeSequence[0]] = 'tail'
         this.#snakeSequence.unshift(newHeadPosition)
-        this.#map[this.#snakeSequence[0]] = 'head'
-        delete this.#map[this.#snakeSequence.pop()]
+        if (this.#map[newHeadPosition] === 'food') {
+            this.#addFood()
+        } else {
+            delete this.#map[this.#snakeSequence.pop()]
+        }
+        this.#map[newHeadPosition] = 'head'
         this.#direction = this.#directionsQueue.shift() ?? this.#direction
     }
 
@@ -43,7 +53,7 @@ export class BaseGame {
             && newHeadPosition < width * height
             && ((this.#direction === 'left' && this.#snakeSequence[0] % width)
                 || (this.#direction === 'right' && newHeadPosition % width))
-            && !this.#map[newHeadPosition] ? newHeadPosition : undefined
+            && (!this.#map[newHeadPosition] || this.#map[newHeadPosition] === 'food') ? newHeadPosition : undefined
     }
 
     #gameOver() {
@@ -55,6 +65,7 @@ export class BaseGame {
         this.#snakeSequence.forEach((position, i) => {
             this.#map[position] = i == 0 ? 'head' : 'tail'
         })
+        this.#addFood()
     }
     /**
      * @param {Direction} direction 
@@ -92,5 +103,8 @@ export class BaseGame {
         const result = [position % width]
         result[1] = (position - result[0]) / width
         return result
+    }
+    #addFood() {
+        this.#map[this.#getRandomFreePosition()] = 'food'
     }
 }
