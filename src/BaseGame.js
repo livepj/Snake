@@ -8,7 +8,6 @@ export class BaseGame {
     _food = []
     /** @type {Position[]} */
     #directionsQueue = []
-    #onGameOverCallbacks = []
     #directionChanged = false
     #isGameOver = false
     _updateTimeMS = 500
@@ -20,18 +19,25 @@ export class BaseGame {
         this._food.push(this._getRandomFreePosition())
     }
 
-    _getRandomFreePosition() {
-        const freeCells = width * height - this._snakeSequence.length + this._food.length
-        if (freeCells === 0) {
+    /**
+     * @param {position[]} alsoCheck 
+     */
+    _getRandomFreePosition(alsoCheck) {
+        const checkList = this._food.concat(this._snakeSequence)
+        if (alsoCheck) {
+            checkList = checkList.concat(alsoCheck)
+        }
+        const freeCells = width * height - checkList.length
+        if (freeCells <= 0) {
             throw 'no more place'
         }
-        const freePosinitionNumber = this._food.concat(this._snakeSequence).reduce((freePositionNumber, busyPosition) => {
+        const freePositionNumber = checkList.sort((a, b) => this.#pos2num(a) - this.#pos2num(b)).reduce((freePositionNumber, busyPosition) => {
             if (freePositionNumber >= this.#pos2num(busyPosition)) {
                 freePositionNumber++
             }
             return freePositionNumber
         }, Math.floor(Math.random() * freeCells))
-        return this.#num2pos(freePosinitionNumber)
+        return this.#num2pos(freePositionNumber)
     }
 
     update() {
@@ -40,14 +46,14 @@ export class BaseGame {
         }
         const newHeadPosition = this._getNewHeadPosition()
         if (!newHeadPosition) {
-            this.#gameOver()
+            this.#gameOver('you crashed')
             return
         }
         this._snakeSequence.unshift(newHeadPosition)
         try {
             this._eatIfPossible()
-        } catch {
-            this.#gameOver()
+        } catch (e) {
+            this.#gameOver(e)
             return
         }
         const newDirection = this.#directionsQueue.shift()
@@ -76,10 +82,12 @@ export class BaseGame {
         return [x, y]
     }
 
-    #gameOver() {
+    /**
+     * @param {string} text 
+     */
+    #gameOver(text) {
         this.#isGameOver = true
-        this.#onGameOverCallbacks.forEach(callBack => callBack())
-        console.log('gameOver')
+        console.log('gameOver', text)
     }
 
     /**
@@ -97,13 +105,6 @@ export class BaseGame {
             }
 
         }
-    }
-
-    /**
-     * @param {() => void} callBack 
-     */
-    onGameOver(callBack) {
-        this.#onGameOverCallbacks.push(callBack)
     }
 
     getСontext() {
@@ -124,10 +125,9 @@ export class BaseGame {
     }
 
     /**
-     * @param {Position} position
+     * @param {Position} param0
      */
-    #pos2num(position) {
-        const [x, y] = position
+    #pos2num([x, y]) {
         return y * width + x
     }
 

@@ -22,4 +22,8 @@ export default class WallsGame extends BaseGame {
             ...super.getСontext()
         }
     }
+
+    _getRandomFreePosition() {
+        return super._getRandomFreePosition(this.#walls)
+    }
 }
