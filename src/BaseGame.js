@@ -11,7 +11,7 @@ export class BaseGame {
     #onGameOverCallbacks = []
     #directionChanged = false
     #isGameOver = false
-    _updateTimeMS = 50
+    _updateTimeMS = 500
     get updateTimeMS() {
         return this._updateTimeMS
     }
