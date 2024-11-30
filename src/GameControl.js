@@ -67,7 +67,7 @@ export default class GameControl {
             case 'Portal':
                 this.#game = new PortalGame()
         }
-        let context = this.#game.getСontext()
+        let context = this.#game.getContext()
         this.#snakeSize = context.tails.length
         while (context) {
             ui.setScore(this.#score)
@@ -79,7 +79,7 @@ export default class GameControl {
                 break
             }
             this.#game.update()
-            context = this.#game.getСontext()
+            context = this.#game.getContext()
             const snakeSize = context.tails.length
             if (snakeSize > this.#snakeSize) {
                 this.#score += snakeSize - this.#snakeSize

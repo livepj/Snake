@@ -10,7 +10,7 @@ document.body.appendChild(app.view)
 globalThis.__PIXI_APP__ = app
 
 const modesList = ['Classic', 'No Die', 'Walls', 'Portal', 'Speed']
-export const board = window.board = app.stage.addChild(new Board())
-export const ui = window.UI = app.stage.addChild(new UI(modesList))
+export const board = app.stage.addChild(new Board())
+export const ui = app.stage.addChild(new UI(modesList))
 new GameControl(modesList)
 

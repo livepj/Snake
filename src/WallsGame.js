@@ -4,26 +4,26 @@ export default class WallsGame extends BaseGame {
     /**
      * @type {Position[]}
      */
-    #walls = []
+    _walls = []
 
     _addFood() {
         super._addFood()
-        this.#walls.push(this._getRandomFreePosition())
+        this._walls.push(this._getRandomFreePosition())
     }
 
     _getNewHeadPosition() {
         const [x, y] = super._getNewHeadPosition()
-        return this.#walls.some(([wallX, wallY]) => wallX === x && wallY === y) ? undefined : [x, y]
+        return this._walls.some(([wallX, wallY]) => wallX === x && wallY === y) ? undefined : [x, y]
     }
 
-    getСontext() {
+    getContext() {
         return {
-            walls: this.#walls.concat(),
-            ...super.getСontext()
+            walls: this._walls.concat(),
+            ...super.getContext()
         }
     }
 
     _getRandomFreePosition() {
-        return super._getRandomFreePosition(this.#walls)
+        return super._getRandomFreePosition(this._walls)
     }
 }

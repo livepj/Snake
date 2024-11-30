@@ -23,7 +23,7 @@ export class BaseGame {
      * @param {position[]} alsoCheck 
      */
     _getRandomFreePosition(alsoCheck) {
-        const checkList = this._food.concat(this._snakeSequence)
+        let checkList = this._food.concat(this._snakeSequence)
         if (alsoCheck) {
             checkList = checkList.concat(alsoCheck)
         }
@@ -107,7 +107,7 @@ export class BaseGame {
         }
     }
 
-    getСontext() {
+    getContext() {
         return {
             head: this._snakeSequence[0],
             tails: this._snakeSequence.slice(1),
