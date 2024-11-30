@@ -1,101 +1,131 @@
 import { height, width } from "."
 
 export class BaseGame {
-    #directions = {
-        up: -height,
-        down: height,
-        left: -1,
-        right: 1
-    }
     /** @type {Direction} */
     #direction = 'right'
-    #snakeSequence = [23, 22, 21]
-    /** @type {Cell[]} */
-    #map = []
-    /** @type {Direction[]} */
+    #snakeSequence = [[4, 2], [3, 2], [2, 2]]
+    /** @type {Position[]} */
+    #food = []
+    /** @type {Position[]} */
     #directionsQueue = []
     #onGameOverCallbacks = []
+    #directionChanged = false
+    #isGameOver = false
 
     constructor() {
-        this.#setStartingCells()
+        this.#addFood()
     }
 
     #getRandomFreePosition() {
-        const freeCells = width * height - this.#map.reduce(amount => ++amount, 0)
-        return this.#map.reduce((freePosition, _, busyPosition) => {
-            if (freePosition >= busyPosition) {
-                freePosition++
+        const freeCells = width * height - this.#snakeSequence.length + this.#food.length
+        if (freeCells === 0) {
+            throw 'no more place'
+        }
+        const freePosinitionNumber = this.#food.concat(this.#snakeSequence).reduce((freePositionNumber, busyPosition) => {
+            if (freePositionNumber >= this.#pos2num(busyPosition)) {
+                freePositionNumber++
             }
-            return freePosition
+            return freePositionNumber
         }, Math.floor(Math.random() * freeCells))
+        return this.#num2pos(freePosinitionNumber)
     }
 
     update() {
+        if (this.#isGameOver) {
+            return
+        }
         const newHeadPosition = this.#getNewHeadPosition()
         if (!newHeadPosition) {
             this.#gameOver()
             return
         }
-        this.#map[this.#snakeSequence[0]] = 'tail'
         this.#snakeSequence.unshift(newHeadPosition)
-        if (this.#map[newHeadPosition] === 'food') {
-            this.#addFood()
+        const newFood = this.#food.filter(([x, y]) => newHeadPosition[0] !== x || newHeadPosition[1] !== y)
+        if (newFood.length === this.#food.length) {
+            this.#snakeSequence.pop()
         } else {
-            delete this.#map[this.#snakeSequence.pop()]
+            this.#food = newFood
+            try {
+                this.#addFood()
+            } catch {
+                this.#gameOver()
+                return
+            }
         }
-        this.#map[newHeadPosition] = 'head'
-        this.#direction = this.#directionsQueue.shift() ?? this.#direction
+        const newDirection = this.#directionsQueue.shift()
+        this.#directionChanged = !!newDirection
+        this.#direction = newDirection ?? this.#direction
+
     }
 
     #getNewHeadPosition() {
-        const newHeadPosition = this.#snakeSequence[0] + this.#directions[this.#direction]
-        return newHeadPosition > 0
-            && newHeadPosition < width * height
-            && ((this.#direction === 'left' && this.#snakeSequence[0] % width)
-                || (this.#direction === 'right' && newHeadPosition % width))
-            && (!this.#map[newHeadPosition] || this.#map[newHeadPosition] === 'food') ? newHeadPosition : undefined
+        let [x, y] = this.#snakeSequence[0]
+        switch (this.#direction) {
+            case "up":
+                y -= 1
+                if (y < 0) {
+                    return
+                }
+                break
+            case "down":
+                y += 1
+                if (y >= height) {
+                    return
+                }
+                break
+            case "left":
+                x -= 1
+                if (x < 0) {
+                    return
+                }
+                break
+            case "right":
+                x += 1
+                if (x >= width) {
+                    return
+                }
+        }
+        return this.#snakeSequence.some(([tailX, tailY]) => tailX === x && tailY === y) ? undefined : [x, y]
     }
 
     #gameOver() {
+        this.#isGameOver = true
         this.#onGameOverCallbacks.forEach(callBack => callBack())
         console.log('gameOver')
     }
 
-    #setStartingCells() {
-        this.#snakeSequence.forEach((position, i) => {
-            this.#map[position] = i == 0 ? 'head' : 'tail'
-        })
-        this.#addFood()
-    }
     /**
      * @param {Direction} direction 
      */
-    addDirection(direction) {
-        this.#directionsQueue.push(direction)
+    changeDirection(direction) {
+        const { length } = this.#directionsQueue
+        const comparedDirection = length ? this.#directionsQueue[length - 1] : this.#direction
+        if (comparedDirection !== direction && !this.#isOposite(comparedDirection, direction)) {
+            if (this.#directionChanged) {
+                this.#directionsQueue.push(direction)
+            } else {
+                this.#direction = direction
+                this.#directionChanged = true
+            }
+
+        }
     }
 
     /**
-     * @param {()=>void} callBack 
+     * @param {() => void} callBack 
      */
     onGameOver(callBack) {
         this.#onGameOverCallbacks.push(callBack)
     }
 
     getСontext() {
-        return this.#map.reduce((result, cell, position) => {
-            switch (cell) {
-                case 'head':
-                    result.head = this.#num2pos(position)
-                    break
-                case 'tail':
-                    result.tails.push(this.#num2pos(position))
-                    break
-                case 'food':
-                    result.food.push(this.#num2pos(position))
-            }
-            return result
-        }, { tails: [], food: [] })
+        return {
+            head: this.#snakeSequence[0],
+            tails: this.#snakeSequence.slice(1),
+            food: this.#food.concat()
+        }
     }
+
     /**
      * @param {number} position
      */
@@ -104,7 +134,29 @@ export class BaseGame {
         result[1] = (position - result[0]) / width
         return result
     }
+
+    /**
+     * @param {Position} position
+     */
+    #pos2num(position) {
+        const [x, y] = position
+        return y * width + x
+    }
+
     #addFood() {
-        this.#map[this.#getRandomFreePosition()] = 'food'
+        this.#food.push(this.#getRandomFreePosition())
+    }
+    /**
+     * @param {Direction} direction1 
+     * @param {Direction} direction2 
+     */
+    #isOposite(direction1, direction2) {
+        const opposites = {
+            left: 'right',
+            right: 'left',
+            up: 'down',
+            down: 'up',
+        }
+        return opposites[direction1] === direction2;
     }
 }
