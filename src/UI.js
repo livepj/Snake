@@ -99,9 +99,9 @@ export class UI extends PIXI.Container {
      * @param {number} score 
      */
     setScore(score) {
-        this.#scoreText.text = score.toString()
+        this.#scoreText.text = score
         if (score > this.#bestText.text) {
-            this.#bestText.text = score.toString()
+            this.#bestText.text = score
         }
     }
 }

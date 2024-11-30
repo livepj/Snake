@@ -2,26 +2,30 @@ import { height, width } from "."
 
 export class BaseGame {
     /** @type {Direction} */
-    #direction = 'right'
-    #snakeSequence = [[4, 2], [3, 2], [2, 2]]
+    _direction = 'right'
+    _snakeSequence = [[4, 2], [3, 2], [2, 2]]
     /** @type {Position[]} */
-    #food = []
+    _food = []
     /** @type {Position[]} */
     #directionsQueue = []
     #onGameOverCallbacks = []
     #directionChanged = false
     #isGameOver = false
-
-    constructor() {
-        this.#addFood()
+    _updateTimeMS = 50
+    get updateTimeMS() {
+        return this._updateTimeMS
     }
 
-    #getRandomFreePosition() {
-        const freeCells = width * height - this.#snakeSequence.length + this.#food.length
+    constructor() {
+        this._food.push(this._getRandomFreePosition())
+    }
+
+    _getRandomFreePosition() {
+        const freeCells = width * height - this._snakeSequence.length + this._food.length
         if (freeCells === 0) {
             throw 'no more place'
         }
-        const freePosinitionNumber = this.#food.concat(this.#snakeSequence).reduce((freePositionNumber, busyPosition) => {
+        const freePosinitionNumber = this._food.concat(this._snakeSequence).reduce((freePositionNumber, busyPosition) => {
             if (freePositionNumber >= this.#pos2num(busyPosition)) {
                 freePositionNumber++
             }
@@ -34,58 +38,42 @@ export class BaseGame {
         if (this.#isGameOver) {
             return
         }
-        const newHeadPosition = this.#getNewHeadPosition()
+        const newHeadPosition = this._getNewHeadPosition()
         if (!newHeadPosition) {
             this.#gameOver()
             return
         }
-        this.#snakeSequence.unshift(newHeadPosition)
-        const newFood = this.#food.filter(([x, y]) => newHeadPosition[0] !== x || newHeadPosition[1] !== y)
-        if (newFood.length === this.#food.length) {
-            this.#snakeSequence.pop()
-        } else {
-            this.#food = newFood
-            try {
-                this.#addFood()
-            } catch {
-                this.#gameOver()
-                return
-            }
+        this._snakeSequence.unshift(newHeadPosition)
+        try {
+            this._eatIfPossible()
+        } catch {
+            this.#gameOver()
+            return
         }
         const newDirection = this.#directionsQueue.shift()
         this.#directionChanged = !!newDirection
-        this.#direction = newDirection ?? this.#direction
-
+        this._direction = newDirection ?? this._direction
     }
 
-    #getNewHeadPosition() {
-        let [x, y] = this.#snakeSequence[0]
-        switch (this.#direction) {
+    _getNewHeadPosition() {
+        let [x, y] = this._snakeSequence[0]
+        switch (this._direction) {
             case "up":
                 y -= 1
-                if (y < 0) {
-                    return
-                }
                 break
             case "down":
                 y += 1
-                if (y >= height) {
-                    return
-                }
                 break
             case "left":
                 x -= 1
-                if (x < 0) {
-                    return
-                }
                 break
             case "right":
                 x += 1
-                if (x >= width) {
-                    return
-                }
         }
-        return this.#snakeSequence.some(([tailX, tailY]) => tailX === x && tailY === y) ? undefined : [x, y]
+        if (this._hasCollisions([x, y])) {
+            return
+        }
+        return [x, y]
     }
 
     #gameOver() {
@@ -99,12 +87,12 @@ export class BaseGame {
      */
     changeDirection(direction) {
         const { length } = this.#directionsQueue
-        const comparedDirection = length ? this.#directionsQueue[length - 1] : this.#direction
+        const comparedDirection = length ? this.#directionsQueue[length - 1] : this._direction
         if (comparedDirection !== direction && !this.#isOposite(comparedDirection, direction)) {
             if (this.#directionChanged) {
                 this.#directionsQueue.push(direction)
             } else {
-                this.#direction = direction
+                this._direction = direction
                 this.#directionChanged = true
             }
 
@@ -120,9 +108,9 @@ export class BaseGame {
 
     getСontext() {
         return {
-            head: this.#snakeSequence[0],
-            tails: this.#snakeSequence.slice(1),
-            food: this.#food.concat()
+            head: this._snakeSequence[0],
+            tails: this._snakeSequence.slice(1),
+            food: this._food.concat()
         }
     }
 
@@ -143,9 +131,10 @@ export class BaseGame {
         return y * width + x
     }
 
-    #addFood() {
-        this.#food.push(this.#getRandomFreePosition())
+    _addFood() {
+        this._food.push(this._getRandomFreePosition())
     }
+
     /**
      * @param {Direction} direction1 
      * @param {Direction} direction2 
@@ -158,5 +147,23 @@ export class BaseGame {
             down: 'up',
         }
         return opposites[direction1] === direction2;
+    }
+
+    _eatIfPossible() {
+        const [headX, headY] = this._snakeSequence[0]
+        const newFood = this._food.filter(([x, y]) => headX !== x || headY !== y)
+        if (newFood.length === this._food.length) {
+            this._snakeSequence.pop()
+        } else {
+            this._food = newFood
+            this._addFood()
+        }
+    }
+
+    /**
+     * @param {Position} param0 
+     */
+    _hasCollisions([x, y]) {
+        return x < 0 || x >= width || y < 0 || y >= height || this._snakeSequence.slice(1, -1).some(([tailX, tailY]) => tailX === x && tailY === y)
     }
 }

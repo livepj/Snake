@@ -2,7 +2,6 @@
 import * as PIXI from 'pixi.js'
 import { Board } from './Board'
 import { UI } from './UI'
-import Timer from './Timer'
 import GameControl from './GameControl'
 
 export const screenWidth = 1000, screenHeihgt = 700, width = 20, height = 20

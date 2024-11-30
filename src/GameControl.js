@@ -1,7 +1,11 @@
 import { ui, board } from "."
 import { BaseGame } from "./BaseGame"
+import GodGame from "./GodGame"
 import { KeyboardHandler } from "./KeyboardHandler"
+import PortalGame from "./PortalGame"
+import SpeedGame from "./SpeedGame"
 import Timer from "./Timer"
+import WallsGame from "./WallsGame"
 
 export default class GameControl {
     /**
@@ -11,11 +15,12 @@ export default class GameControl {
     #timer = new Timer()
     #keyboardHandler = new KeyboardHandler()
     #_isPlaying = false
+    #snakeSize = 0
     /**
      * @type {string[]}
      */
     #modesList
-    #timePerMoveMS = 100
+    #score = 0
     constructor(modesList) {
         this.#modesList = modesList
         this.#subscribeOnUI()
@@ -45,28 +50,41 @@ export default class GameControl {
     }
 
     async #startGame(mode) {
+        this.#score = 0
         switch (mode) {
             case 'Classic':
                 this.#game = new BaseGame()
                 break
-            case 'Speed':
-
-                break
             case 'No Die':
+                this.#game = new GodGame()
+                break
             case 'Walls':
+                this.#game = new WallsGame()
+                break
+            case 'Speed':
+                this.#game = new SpeedGame()
+                break
             case 'Portal':
+                this.#game = new PortalGame()
         }
         let context = this.#game.getСontext()
+        this.#snakeSize = context.tails.length
         while (context) {
+            ui.setScore(this.#score)
             board.drawContext(context)
             try {
-                await this.#timer.delay(this.#timePerMoveMS)
+                await this.#timer.delay(this.#game.updateTimeMS)
             }
             catch (e) {
                 break
             }
             this.#game.update()
             context = this.#game.getСontext()
+            const snakeSize = context.tails.length
+            if (snakeSize > this.#snakeSize) {
+                this.#score += snakeSize - this.#snakeSize
+                this.#snakeSize = snakeSize
+            }
         }
     }
     get #isPlaying() {
