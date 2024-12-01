@@ -11,9 +11,11 @@ export default class WallsGame extends BaseGame {
         this._walls.push(this._getRandomFreePosition())
     }
 
-    _getNewHeadPosition() {
-        const [x, y] = super._getNewHeadPosition()
-        return this._walls.some(([wallX, wallY]) => wallX === x && wallY === y) ? undefined : [x, y]
+    /**
+     * @param {Position} param0 
+     */
+    _hasCollisions([x, y]) {
+        return super._hasCollisions([x, y]) || this._walls.some(([wallX, wallY]) => wallX === x && wallY === y)
     }
 
     getContext() {
